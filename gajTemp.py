@@ -4,28 +4,27 @@ write values to a temp file
 write temp file contents in a mySQL database
 '''
 import os, glob, time, datetime
+from gajResources import *
 
 # db connection parameters
 # load kernel modules to interface temp sensor
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
- 
-# temp sensors directory
-base_dir = '/sys/bus/w1/devices/'
+
 
 def roundTime(dt=None, roundTo=60):
-   """Round a datetime object to any time laps in seconds
-   dt : datetime.datetime object, default now.
-   roundTo : Closest number of seconds to round to, default 1 minute.
-   Author: Thierry Husson 2012 - Use it as you want but don't blame me.
-   """
-   if dt == None : dt = datetime.datetime.now()
-   seconds = (dt - dt.min).seconds
-   # // is a floor division, not a comment on following line:
-   rounding = (seconds+roundTo/2) // roundTo * roundTo
-   return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
+    """Round a datetime object to any time laps in seconds
+    dt : datetime.datetime object, default now.
+    roundTo : Closest number of seconds to round to, default 1 minute.
+    Author: Thierry Husson 2012 - Use it as you want but don't blame me.
+    """
+    if dt == None : dt = datetime.datetime.now()
+    seconds = (dt - dt.min).seconds
+    # // is a floor division, not a comment on following line:
+    rounding = (seconds+roundTo/2) // roundTo * roundTo
+    return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
    
-def device_files():
+def device_files(base_dir):
     '''
     return a list of tuples: (deviceID, deviceFilePath)
     '''
@@ -51,26 +50,28 @@ def read_temps():
     #time.strftime("%Y-%m-%d %H:%M:%S", roundTime(None, 300))
     max_retries = 3
     
-    # iterate on each sensor
-    for (deviceID, device_file) in device_files():
-        retry = 1
-        while retry <= max_retries: 
-        
-            # read raw temp
-            lines = read_temp_raw(device_file)
+    # iterate on each raspberry
+    for base_dir in baseTempDensorsDirs:
+        # iterate on each sensor
+        for (deviceID, device_file) in device_files(base_dir):
+            retry = 1
+            while retry <= max_retries: 
             
-            if lines[0].strip()[-3:] == 'YES': # CRC is OK
-                # find the text "t=" and log the temperature located after it
-                equals_pos = lines[1].find('t=')
-                if equals_pos != -1:
-                    # temp string found
-                    temp_string = lines[1][equals_pos+2:]
-                    temp_c = round(float(temp_string) / 1000.0, 2)
-                    temps.append(";".join([date_time, deviceID, str(temp_c)]))
-                    break                    
-            # try again if CRC is not OK
-            retry += 1
-            time.sleep(0.2)
+                # read raw temp
+                lines = read_temp_raw(device_file)
+                
+                if lines[0].strip()[-3:] == 'YES': # CRC is OK
+                    # find the text "t=" and log the temperature located after it
+                    equals_pos = lines[1].find('t=')
+                    if equals_pos != -1:
+                        # temp string found
+                        temp_string = lines[1][equals_pos+2:]
+                        temp_c = round(float(temp_string) / 1000.0, 2)
+                        temps.append(([date_time, deviceID, str(temp_c)]))
+                        break                    
+                # try again if CRC is not OK
+                retry += 1
+                time.sleep(0.2)
             
     return temps
 

@@ -89,3 +89,7 @@ class PID:
     
     def getDerivator(self):
         return self.Derivator
+    
+    def __str__(self):
+        return 'Error: %f\nPoint: %f\nIntegrator: %f\nDerivator: %f\n' % (self.getError(), self.getPoint(), self.getIntegrator(), self.getDerivator())
+    

@@ -1,3 +1,4 @@
-Garden	0
+Lampe	1
+Garden	1
 FrontSingle	0
-FrontDouble	0
+FrontDouble	1

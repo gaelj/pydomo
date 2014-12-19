@@ -1,16 +1,5 @@
 import time, urllib2, xmltodict, MySQLdb, datetime
-
-weatherUrl =    r'http://wxdata.weather.com/wxdata/weather/local'
-locationCode =  r'/FRNC0526:1:FR'
-
-# db connection parameters
-mySQLhost = '192.168.30.100'
-mySQLuser = 'pi'
-mySQLpasswd = 'ET4bAwC6'
-mySQLdb = 'pi'
-
-OwnerMac = '9C:04:EB:22:98:16'
-presenceTimeout = 300 # seconds
+from gajResources import *
 
 
 class DayTime():
@@ -37,9 +26,9 @@ class DayTime():
     def DecodeTimeString(self, timeString): # returns a time tuple
         return time.strptime(timeString,"%I:%M %p") # u'8:14 AM'
     
-    def CurrentTime(self):
-        now = time.strftime("%I:%M %p")
-        return self.DecodeTimeString(now)
+    def CurrentTime(self, dt):
+        dt = dt.strftime("%I:%M %p")
+        return self.DecodeTimeString(dt)
     
     #<weather ver="2.0">
     #    <loc id="FRNC0526">
@@ -53,10 +42,13 @@ class DayTime():
         self.GetTodaySunTimes()
         sunR, sunS = self.DecodeData()
         isDayTime = False
-        now = self.CurrentTime()
-        if (sunR <= now and now < sunS):
+        now = datetime.datetime.now()
+        nowPlus = self.CurrentTime(now + datetime.timedelta(minutes = 20))
+        nowMinus = self.CurrentTime(now - datetime.timedelta(minutes = 20))
+        nowExact = self.CurrentTime(now)
+        if sunR <= nowPlus and nowMinus < sunS:
             isDayTime = True
-        print(time.strftime('%H:%M', sunR), time.strftime('%H:%M', sunS), time.strftime('%H:%M', now))
+        print(time.strftime('%H:%M', sunR), time.strftime('%H:%M', sunS), time.strftime('%H:%M', nowExact))
         return isDayTime
 
 
@@ -77,7 +69,7 @@ class Owner():
             
             # 2014-12-05 18:18:02
             nbSecsSinceLastConn = (datetime.datetime.now() - conso_data[0][0]).seconds
-            print conso_data[0][0], nbSecsSinceLastConn
+            print 'Ishome (nb seconds since last frame):', conso_data[0][0], nbSecsSinceLastConn
 
             return nbSecsSinceLastConn < presenceTimeout
             
